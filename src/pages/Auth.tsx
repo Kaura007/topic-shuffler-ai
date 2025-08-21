@@ -71,7 +71,7 @@ const Auth = () => {
     }
 
     setLoading(true);
-    const { error } = await signUp(email, password, name);
+    const { error } = await signUp(email, password, name, selectedDepartment);
     
     if (error) {
       toast({
