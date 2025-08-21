@@ -1,11 +1,31 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
-import { BookOpen, GraduationCap, Users, Shield, Search, FileText } from 'lucide-react';
+import { BookOpen, GraduationCap, Users, Shield, Search, FileText, Upload } from 'lucide-react';
+import { DuplicateDetector } from '@/components/DuplicateDetector';
 
 const Index = () => {
+  const [papers, setPapers] = useState<any[]>([]);
+  const [duplicates, setDuplicates] = useState<any[]>([]);
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === 'application/json') {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target?.result as string);
+          setPapers(Array.isArray(data) ? data : [data]);
+        } catch (error) {
+          console.error('Error parsing JSON file:', error);
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -90,14 +110,16 @@ const Index = () => {
             Streamline your final year project management with intelligent duplicate detection, 
             secure storage, and comprehensive research tools.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
+            <Input
+              type="file"
+              accept=".json"
+              onChange={handleFileUpload}
+              className="file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+            />
             <Button size="lg" className="text-lg px-8 py-4">
-              <FileText className="mr-2 h-5 w-5" />
-              Submit Project
-            </Button>
-            <Button size="lg" variant="outline" className="text-lg px-8 py-4">
-              <Search className="mr-2 h-5 w-5" />
-              Browse Projects
+              <Upload className="mr-2 h-5 w-5" />
+              Upload Papers
             </Button>
           </div>
         </div>
@@ -138,6 +160,12 @@ const Index = () => {
             </div>
           </div>
         </div>
+
+        {papers.length > 0 && (
+          <div className="mt-12">
+            <DuplicateDetector papers={papers} onDuplicatesFound={setDuplicates} />
+          </div>
+        )}
       </main>
     </div>
   );
