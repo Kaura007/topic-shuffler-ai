@@ -45,8 +45,12 @@ const Auth = () => {
       .select('*')
       .order('name');
     
+    console.log('Departments data:', data, 'Error:', error);
+    
     if (data && !error) {
       setDepartments(data);
+    } else if (error) {
+      console.error('Error fetching departments:', error);
     }
   };
 
@@ -206,17 +210,26 @@ const Auth = () => {
                   <div className="space-y-2">
                     <Label htmlFor="department">Department</Label>
                     <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-background">
                         <SelectValue placeholder="Select your department" />
                       </SelectTrigger>
-                      <SelectContent>
-                        {departments.map((dept) => (
-                          <SelectItem key={dept.id} value={dept.id}>
-                            {dept.name}
-                          </SelectItem>
-                        ))}
+                      <SelectContent className="bg-popover border border-border z-50">
+                        {departments.length === 0 ? (
+                          <SelectItem value="loading" disabled>Loading departments...</SelectItem>
+                        ) : (
+                          departments.map((dept) => (
+                            <SelectItem key={dept.id} value={dept.id}>
+                              {dept.name}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
+                    {departments.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        {departments.length} departments available
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>
