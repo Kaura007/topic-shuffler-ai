@@ -26,28 +26,16 @@ const Index = () => {
       reader.readAsText(file);
     }
   };
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user) {
-      navigate('/auth');
+    if (user) {
+      navigate('/dashboard');
     }
   }, [user, navigate]);
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-primary/10 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-pulse flex items-center justify-center mb-4">
-            <BookOpen className="h-12 w-12 text-primary" />
-          </div>
-          <h1 className="text-2xl font-lora font-semibold text-foreground">Loading...</h1>
-        </div>
-      </div>
-    );
-  }
-
+  // Landing page for non-authenticated users
   const features = [
     {
       icon: FileText,
@@ -86,9 +74,8 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-muted-foreground">Welcome back!</span>
-            <Button variant="outline" onClick={signOut}>
-              Sign Out
+            <Button variant="outline" onClick={() => navigate('/auth')}>
+              Sign In
             </Button>
           </div>
         </div>
@@ -111,15 +98,11 @@ const Index = () => {
             secure storage, and comprehensive research tools.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
-            <Input
-              type="file"
-              accept=".json"
-              onChange={handleFileUpload}
-              className="file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
-            />
-            <Button size="lg" className="text-lg px-8 py-4">
-              <Upload className="mr-2 h-5 w-5" />
-              Upload Papers
+            <Button size="lg" className="text-lg px-8 py-4" onClick={() => navigate('/auth')}>
+              Get Started
+            </Button>
+            <Button size="lg" variant="outline" className="text-lg px-8 py-4" onClick={() => navigate('/auth')}>
+              Learn More
             </Button>
           </div>
         </div>
