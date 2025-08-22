@@ -45,8 +45,6 @@ const Auth = () => {
       .select('*')
       .order('name');
     
-    console.log('Departments data:', data, 'Error:', error);
-    
     if (data && !error) {
       setDepartments(data);
     } else if (error) {
