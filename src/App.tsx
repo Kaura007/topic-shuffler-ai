@@ -8,6 +8,8 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
+import Submit from "./pages/Submit";
+import Projects from "./pages/Projects";
 import DashboardLayout from "./components/DashboardLayout";
 
 const queryClient = new QueryClient();
@@ -29,12 +31,12 @@ const App = () => (
             } />
             <Route path="/projects" element={
               <DashboardLayout>
-                <div>Projects page - Coming soon</div>
+                <Projects />
               </DashboardLayout>
             } />
             <Route path="/submit" element={
               <DashboardLayout>
-                <div>Submit project page - Coming soon</div>
+                <Submit />
               </DashboardLayout>
             } />
             <Route path="/analytics" element={

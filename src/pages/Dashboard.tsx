@@ -147,7 +147,7 @@ const Dashboard = () => {
             {userProfile?.departments?.name || 'No department assigned'} • {userProfile?.role}
           </p>
         </div>
-        <Button>
+        <Button onClick={() => window.location.href = '/submit'}>
           <Plus className="w-4 h-4 mr-2" />
           New Project
         </Button>
@@ -212,7 +212,7 @@ const Dashboard = () => {
               <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p className="text-lg font-medium">No projects yet</p>
               <p className="text-sm">Get started by creating your first project</p>
-              <Button className="mt-4">
+              <Button className="mt-4" onClick={() => window.location.href = '/submit'}>
                 <Plus className="w-4 h-4 mr-2" />
                 Create Project
               </Button>
