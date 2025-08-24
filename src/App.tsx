@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
 import Submit from "./pages/Submit";
 import Projects from "./pages/Projects";
+import Profile from "./pages/Profile";
 import DashboardLayout from "./components/DashboardLayout";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,11 @@ const App = () => (
             <Route path="/dashboard" element={
               <DashboardLayout>
                 <Dashboard />
+              </DashboardLayout>
+            } />
+            <Route path="/profile" element={
+              <DashboardLayout>
+                <Profile />
               </DashboardLayout>
             } />
             <Route path="/projects" element={

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, BookOpen, Users, Settings, LogOut, Menu, Upload, BarChart3 } from "lucide-react";
+import { Home, BookOpen, Users, Settings, LogOut, Menu, Upload, BarChart3, User } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -27,6 +27,7 @@ interface NavItem {
 
 const mainItems: NavItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
+  { title: "My Profile", url: "/profile", icon: User },
   { title: "My Projects", url: "/projects", icon: BookOpen },
   { title: "Submit Project", url: "/submit", icon: Upload },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
