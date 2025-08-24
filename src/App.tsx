@@ -11,6 +11,9 @@ import Dashboard from "./pages/Dashboard";
 import Submit from "./pages/Submit";
 import Projects from "./pages/Projects";
 import Profile from "./pages/Profile";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminDepartments from "./pages/admin/AdminDepartments";
+import AdminProjects from "./pages/admin/AdminProjects";
 import DashboardLayout from "./components/DashboardLayout";
 
 const queryClient = new QueryClient();
@@ -48,6 +51,21 @@ const App = () => (
             <Route path="/analytics" element={
               <DashboardLayout>
                 <div>Analytics page - Coming soon</div>
+              </DashboardLayout>
+            } />
+            <Route path="/admin/users" element={
+              <DashboardLayout>
+                <AdminUsers />
+              </DashboardLayout>
+            } />
+            <Route path="/admin/departments" element={
+              <DashboardLayout>
+                <AdminDepartments />
+              </DashboardLayout>
+            } />
+            <Route path="/admin/projects" element={
+              <DashboardLayout>
+                <AdminProjects />
               </DashboardLayout>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
