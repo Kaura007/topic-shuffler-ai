@@ -10,9 +10,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileUpload } from '@/components/FileUpload';
+import { DuplicateWarning } from '@/components/DuplicateWarning';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload } from 'lucide-react';
+import { quickDuplicateCheck, checkProjectForDuplicates } from '@/lib/duplicateDetection';
+import { Loader2, Upload, Shield } from 'lucide-react';
+import { useCallback, useRef } from 'react';
 
 const projectSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
@@ -43,6 +47,10 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
   const [userProfile, setUserProfile] = useState<any>(null);
   const [uploadedFile, setUploadedFile] = useState<{ url: string; name: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [duplicates, setDuplicates] = useState<Array<{ project: any, similarity: number }>>([]);
+  const [isDuplicateChecking, setIsDuplicateChecking] = useState(false);
+  const [duplicateCheckCompleted, setDuplicateCheckCompleted] = useState(false);
+  const checkTimeoutRef = useRef<NodeJS.Timeout>();
 
   const form = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
@@ -102,11 +110,62 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
     setUploadedFile({ url: fileUrl, name: fileName });
   };
 
+  // Debounced duplicate checking
+  const checkDuplicates = useCallback(async (title: string, abstract: string) => {
+    if (!title.trim() || title.length < 5) {
+      setDuplicates([]);
+      setDuplicateCheckCompleted(false);
+      return;
+    }
+
+    setIsDuplicateChecking(true);
+    
+    try {
+      // Quick check first
+      const quickResults = await quickDuplicateCheck(title, abstract);
+      setDuplicates(quickResults);
+      
+      // If quick check finds high similarity, do AI check
+      if (quickResults.some(d => d.similarity > 0.7)) {
+        const aiResults = await checkProjectForDuplicates({ title, abstract }, 0.75);
+        setDuplicates(aiResults);
+      }
+      
+      setDuplicateCheckCompleted(true);
+    } catch (error) {
+      console.error('Error checking duplicates:', error);
+    } finally {
+      setIsDuplicateChecking(false);
+    }
+  }, []);
+
+  // Debounced check trigger
+  const triggerDuplicateCheck = useCallback((title: string, abstract: string) => {
+    if (checkTimeoutRef.current) {
+      clearTimeout(checkTimeoutRef.current);
+    }
+    
+    checkTimeoutRef.current = setTimeout(() => {
+      checkDuplicates(title, abstract);
+    }, 1000); // 1 second delay
+  }, [checkDuplicates]);
+
   const onFormSubmit = async (data: ProjectFormData) => {
     if (!userProfile) {
       toast({
         title: "Profile not loaded",
         description: "Please refresh and try again",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check for blocking duplicates
+    const highSimilarityDuplicates = duplicates.filter(d => d.similarity > 0.85);
+    if (highSimilarityDuplicates.length > 0) {
+      toast({
+        title: "Duplicate content detected",
+        description: "Please modify your project to make it more unique before submitting",
         variant: "destructive"
       });
       return;
@@ -188,9 +247,20 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
                     <Input 
                       placeholder="Enter your project title"
                       {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        const currentAbstract = form.getValues('abstract');
+                        triggerDuplicateCheck(e.target.value, currentAbstract);
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
+                  {isDuplicateChecking && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Checking for duplicates...
+                    </div>
+                  )}
                 </FormItem>
               )}
             />
@@ -206,6 +276,11 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
                       placeholder="Provide a detailed abstract of your project (minimum 50 characters)"
                       className="min-h-32"
                       {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        const currentTitle = form.getValues('title');
+                        triggerDuplicateCheck(currentTitle, e.target.value);
+                      }}
                     />
                   </FormControl>
                   <FormDescription>
@@ -278,10 +353,28 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
               )}
             </div>
 
+            {/* Duplicate Detection Results */}
+            {duplicates.length > 0 && (
+              <DuplicateWarning 
+                duplicates={duplicates}
+                severity={duplicates.some(d => d.similarity > 0.85) ? 'error' : 'warning'}
+              />
+            )}
+
+            {/* Duplicate Check Status */}
+            {duplicateCheckCompleted && duplicates.length === 0 && (
+              <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+                <Shield className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-800 dark:text-green-200">
+                  No similar projects detected. Your submission appears to be original.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="flex gap-3 pt-4">
               <Button 
                 type="submit" 
-                disabled={isSubmitting}
+                disabled={isSubmitting || duplicates.some(d => d.similarity > 0.85)}
                 className="flex-1"
               >
                 {isSubmitting ? (
