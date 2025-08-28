@@ -3,11 +3,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileViewer } from '@/components/FileViewer';
-import { BookOpen, Search, Filter, Plus, Calendar, Building } from 'lucide-react';
+import AdvancedSearch from '@/components/AdvancedSearch';
+import { BookOpen, Plus, Calendar, Building, Tag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Project {
@@ -18,6 +17,7 @@ interface Project {
   created_at: string;
   updated_at: string;
   file_url: string | null;
+  tags: string[];
   departments: {
     name: string;
   };
@@ -31,6 +31,14 @@ interface Department {
   name: string;
 }
 
+interface SearchFilters {
+  query: string;
+  year: string;
+  department: string;
+  tags: string[];
+  author: string;
+}
+
 const Projects = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -39,9 +47,13 @@ const Projects = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedYear, setSelectedYear] = useState<string>('all');
-  const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
+  const [filters, setFilters] = useState<SearchFilters>({
+    query: '',
+    year: 'all',
+    department: 'all',
+    tags: [],
+    author: 'all'
+  });
 
   useEffect(() => {
     fetchData();
@@ -49,7 +61,7 @@ const Projects = () => {
 
   useEffect(() => {
     filterProjects();
-  }, [projects, searchQuery, selectedYear, selectedDepartment]);
+  }, [projects, filters]);
 
   const fetchData = async () => {
     if (!user) return;
@@ -109,30 +121,81 @@ const Projects = () => {
     }
   };
 
-  const filterProjects = () => {
+  const filterProjects = async () => {
     let filtered = projects;
 
-    // Search filter
-    if (searchQuery) {
-      filtered = filtered.filter(project =>
-        project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        project.abstract?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        project.profiles.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        project.departments.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+    // Enhanced search with full-text search
+    if (filters.query) {
+      // Use PostgreSQL full-text search for better matching
+      const { data: searchResults, error } = await supabase
+        .from('projects')
+        .select(`
+          *,
+          departments(name),
+          profiles(name)
+        `)
+        .textSearch('title', filters.query)
+        .order('created_at', { ascending: false });
+
+      if (!error && searchResults) {
+        // Get IDs of full-text search results
+        const searchIds = searchResults.map(p => p.id);
+        
+        // Filter current projects based on search results and fallback to simple text search
+        filtered = filtered.filter(project =>
+          searchIds.includes(project.id) ||
+          project.title.toLowerCase().includes(filters.query.toLowerCase()) ||
+          project.abstract?.toLowerCase().includes(filters.query.toLowerCase()) ||
+          project.profiles.name.toLowerCase().includes(filters.query.toLowerCase()) ||
+          project.departments.name.toLowerCase().includes(filters.query.toLowerCase()) ||
+          project.tags.some(tag => tag.toLowerCase().includes(filters.query.toLowerCase()))
+        );
+      } else {
+        // Fallback to simple text search
+        filtered = filtered.filter(project =>
+          project.title.toLowerCase().includes(filters.query.toLowerCase()) ||
+          project.abstract?.toLowerCase().includes(filters.query.toLowerCase()) ||
+          project.profiles.name.toLowerCase().includes(filters.query.toLowerCase()) ||
+          project.departments.name.toLowerCase().includes(filters.query.toLowerCase()) ||
+          project.tags.some(tag => tag.toLowerCase().includes(filters.query.toLowerCase()))
+        );
+      }
     }
 
     // Year filter
-    if (selectedYear !== 'all') {
-      filtered = filtered.filter(project => project.year.toString() === selectedYear);
+    if (filters.year !== 'all') {
+      filtered = filtered.filter(project => project.year.toString() === filters.year);
     }
 
     // Department filter
-    if (selectedDepartment !== 'all') {
-      filtered = filtered.filter(project => project.departments.name === selectedDepartment);
+    if (filters.department !== 'all') {
+      filtered = filtered.filter(project => project.departments.name === filters.department);
+    }
+
+    // Tags filter
+    if (filters.tags.length > 0) {
+      filtered = filtered.filter(project =>
+        filters.tags.some(tag => project.tags.includes(tag))
+      );
+    }
+
+    // Author filter
+    if (filters.author !== 'all') {
+      filtered = filtered.filter(project => project.profiles.name === filters.author);
     }
 
     setFilteredProjects(filtered);
+  };
+  
+  const getAvailableTags = () => {
+    const allTags = projects.flatMap(p => p.tags);
+    const uniqueTags = [...new Set(allTags)].sort();
+    return uniqueTags;
+  };
+  
+  const getAvailableAuthors = () => {
+    const authors = [...new Set(projects.map(p => p.profiles.name))].sort();
+    return authors;
   };
 
   const getAvailableYears = () => {
@@ -181,65 +244,16 @@ const Projects = () => {
         </Button>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filter & Search
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Search</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search projects, authors, departments..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Year</label>
-              <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All years" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All years</SelectItem>
-                  {getAvailableYears().map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Department</label>
-              <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All departments" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All departments</SelectItem>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.name}>
-                      {dept.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Advanced Search */}
+      <AdvancedSearch
+        filters={filters}
+        onFiltersChange={setFilters}
+        departments={departments}
+        availableYears={getAvailableYears()}
+        availableTags={getAvailableTags()}
+        availableAuthors={getAvailableAuthors()}
+        isLoading={isLoading}
+      />
 
       {/* Projects List */}
       <div className="space-y-4">
@@ -249,12 +263,12 @@ const Projects = () => {
               <BookOpen className="h-16 w-16 mx-auto mb-4 opacity-30" />
               <h3 className="text-lg font-medium mb-2">No projects found</h3>
               <p className="text-muted-foreground mb-4">
-                {searchQuery || selectedYear !== 'all' || selectedDepartment !== 'all'
+                {filters.query || filters.year !== 'all' || filters.department !== 'all' || filters.tags.length > 0 || filters.author !== 'all'
                   ? 'Try adjusting your filters or search terms'
                   : 'No projects have been submitted yet'
                 }
               </p>
-              {!searchQuery && selectedYear === 'all' && selectedDepartment === 'all' && (
+              {!filters.query && filters.year === 'all' && filters.department === 'all' && filters.tags.length === 0 && filters.author === 'all' && (
                 <Button onClick={() => window.location.href = '/submit'}>
                   <Plus className="w-4 h-4 mr-2" />
                   Submit First Project
@@ -279,6 +293,16 @@ const Projects = () => {
                         <Calendar className="h-3 w-3" />
                         {formatDate(project.created_at)}
                       </Badge>
+                      {project.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 ml-2">
+                          {project.tags.map((tag) => (
+                            <Badge key={tag} variant="secondary" className="flex items-center gap-1 text-xs">
+                              <Tag className="h-2 w-2" />
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <CardDescription>
                       By {project.profiles.name}

@@ -116,6 +116,7 @@ export type Database = {
           file_url: string | null
           id: string
           student_id: string
+          tags: string[] | null
           title: string
           updated_at: string
           year: number
@@ -127,6 +128,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           student_id: string
+          tags?: string[] | null
           title: string
           updated_at?: string
           year: number
@@ -138,6 +140,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           student_id?: string
+          tags?: string[] | null
           title?: string
           updated_at?: string
           year?: number

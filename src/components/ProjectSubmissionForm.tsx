@@ -15,7 +15,8 @@ import { FileUpload } from '@/components/FileUpload';
 import { DuplicateWarning } from '@/components/DuplicateWarning';
 import { useToast } from '@/hooks/use-toast';
 import { quickDuplicateCheck, checkProjectForDuplicates } from '@/lib/duplicateDetection';
-import { Loader2, Upload, Shield } from 'lucide-react';
+import { Loader2, Upload, Shield, Tag } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { useCallback, useRef } from 'react';
 
 const projectSchema = z.object({
@@ -23,6 +24,7 @@ const projectSchema = z.object({
   abstract: z.string().min(50, 'Abstract must be at least 50 characters'),
   year: z.number().min(2020).max(new Date().getFullYear() + 1),
   department_id: z.string().uuid('Please select a department'),
+  tags: z.array(z.string()).default([]).optional(),
 });
 
 type ProjectFormData = z.infer<typeof projectSchema>;
@@ -50,6 +52,7 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
   const [duplicates, setDuplicates] = useState<Array<{ project: any, similarity: number }>>([]);
   const [isDuplicateChecking, setIsDuplicateChecking] = useState(false);
   const [duplicateCheckCompleted, setDuplicateCheckCompleted] = useState(false);
+  const [tagInput, setTagInput] = useState('');
   const checkTimeoutRef = useRef<NodeJS.Timeout>();
 
   const form = useForm<ProjectFormData>({
@@ -59,6 +62,7 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
       abstract: '',
       year: new Date().getFullYear(),
       department_id: '',
+      tags: []
     }
   });
 
@@ -181,6 +185,7 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
         department_id: data.department_id,
         student_id: userProfile.id,
         file_url: uploadedFile?.url || null,
+        tags: data.tags || []
       };
 
       const { data: project, error } = await supabase
@@ -337,6 +342,73 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
                 )}
               />
             </div>
+
+            {/* Tags Field */}
+            <FormField
+              control={form.control}
+              name="tags"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tags</FormLabel>
+                  <FormControl>
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Add tags (e.g., AI, Machine Learning, Data Science)"
+                          value={tagInput}
+                          onChange={(e) => setTagInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && tagInput.trim()) {
+                              e.preventDefault();
+                              const newTag = tagInput.trim();
+                              if (!field.value?.includes(newTag)) {
+                                field.onChange([...(field.value || []), newTag]);
+                              }
+                              setTagInput('');
+                            }
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            if (tagInput.trim() && !field.value?.includes(tagInput.trim())) {
+                              field.onChange([...(field.value || []), tagInput.trim()]);
+                              setTagInput('');
+                            }
+                          }}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                      {field.value && field.value.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {field.value.map((tag: string, index: number) => (
+                            <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                              {tag}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newTags = field.value?.filter((_, i) => i !== index);
+                                  field.onChange(newTags);
+                                }}
+                                className="ml-1 hover:text-destructive"
+                              >
+                                ×
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </FormControl>
+                  <FormDescription>
+                    Add relevant tags to help others find your project (press Enter or click Add)
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div>
               <FormLabel className="text-base font-medium mb-3 block">
