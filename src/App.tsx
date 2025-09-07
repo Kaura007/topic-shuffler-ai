@@ -15,6 +15,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminDepartments from "./pages/admin/AdminDepartments";
 import AdminProjects from "./pages/admin/AdminProjects";
 import DashboardLayout from "./components/DashboardLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -54,19 +55,25 @@ const App = () => (
               </DashboardLayout>
             } />
             <Route path="/admin/users" element={
-              <DashboardLayout>
-                <AdminUsers />
-              </DashboardLayout>
+              <ProtectedRoute requireAdmin>
+                <DashboardLayout>
+                  <AdminUsers />
+                </DashboardLayout>
+              </ProtectedRoute>
             } />
             <Route path="/admin/departments" element={
-              <DashboardLayout>
-                <AdminDepartments />
-              </DashboardLayout>
+              <ProtectedRoute requireAdmin>
+                <DashboardLayout>
+                  <AdminDepartments />
+                </DashboardLayout>
+              </ProtectedRoute>
             } />
             <Route path="/admin/projects" element={
-              <DashboardLayout>
-                <AdminProjects />
-              </DashboardLayout>
+              <ProtectedRoute requireAdmin>
+                <DashboardLayout>
+                  <AdminProjects />
+                </DashboardLayout>
+              </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
