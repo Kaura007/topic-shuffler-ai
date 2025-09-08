@@ -17,7 +17,7 @@ interface AuthContextType {
   userProfile: UserProfile | null;
   loading: boolean;
   isAdmin: boolean;
-  signUp: (email: string, password: string, name: string, departmentId?: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, name: string, departmentId?: string, matriculationNumber?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -88,7 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, name: string, departmentId?: string) => {
+  const signUp = async (email: string, password: string, name: string, departmentId?: string, matriculationNumber?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
@@ -98,7 +98,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         emailRedirectTo: redirectUrl,
         data: {
           name: name,
-          department_id: departmentId
+          department_id: departmentId,
+          matriculation_number: matriculationNumber
         }
       }
     });

@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 const profileSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be less than 100 characters'),
   department_id: z.string().optional(),
+  matriculation_number: z.string().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -28,6 +29,7 @@ interface Profile {
   name: string;
   role: string;
   department_id: string | null;
+  matriculation_number?: string | null;
   departments?: {
     name: string;
   };
@@ -53,6 +55,7 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
     defaultValues: {
       name: profile.name,
       department_id: profile.department_id || '',
+      matriculation_number: profile.matriculation_number || '',
     }
   });
 
@@ -85,6 +88,7 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
       const updateData: any = {
         name: data.name,
         department_id: data.department_id || null,
+        matriculation_number: data.matriculation_number || null,
       };
 
       const { data: updatedProfile, error } = await supabase
@@ -160,6 +164,20 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="matriculation_number"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Matriculation Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., MAT/2023/001" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
