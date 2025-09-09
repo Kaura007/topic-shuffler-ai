@@ -296,6 +296,36 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
               )}
             />
 
+            {/* Student Info Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <FormLabel>Student Name</FormLabel>
+                <Input 
+                  value={userProfile?.name || 'Loading...'} 
+                  disabled 
+                  className="bg-muted"
+                />
+                <FormDescription>
+                  Your registered name from your profile
+                </FormDescription>
+              </div>
+
+              <div className="space-y-2">
+                <FormLabel>Matriculation Number</FormLabel>
+                <Input 
+                  value={userProfile?.matriculation_number || 'Not set'} 
+                  disabled 
+                  className="bg-muted"
+                />
+                <FormDescription>
+                  {userProfile?.matriculation_number ? 
+                    'Your matriculation number from your profile' : 
+                    'Update your matriculation number in your profile'
+                  }
+                </FormDescription>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
