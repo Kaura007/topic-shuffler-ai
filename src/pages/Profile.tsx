@@ -19,6 +19,7 @@ interface Profile {
   department_id: string | null;
   avatar_url: string | null;
   created_at: string;
+  matriculation_number?: string | null;
   departments?: {
     name: string;
   };
@@ -252,6 +253,17 @@ const Profile = () => {
                   </Label>
                   <p className="text-sm mt-1">
                     {profile.departments?.name || 'No department assigned'}
+                  </p>
+                </div>
+
+                <Separator />
+                
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Matriculation Number
+                  </Label>
+                  <p className="text-sm mt-1">
+                    {profile.matriculation_number || 'Not set'}
                   </p>
                 </div>
               </div>
