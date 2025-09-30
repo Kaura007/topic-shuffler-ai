@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Users, Search, UserPlus, Edit, Trash2, Crown, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { CreateUserDialog } from '@/components/CreateUserDialog';
 
 interface Profile {
   id: string;
@@ -230,6 +231,7 @@ const AdminUsers = () => {
             Manage user accounts, roles, and departments
           </p>
         </div>
+        <CreateUserDialog departments={departments} onUserCreated={fetchData} />
       </div>
 
       {/* Filters */}

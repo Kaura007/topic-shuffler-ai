@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { FileViewer } from '@/components/FileViewer';
 import { BookOpen, Search, Calendar, Building, User, FileText, Trash2, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { CreateProjectDialog } from '@/components/CreateProjectDialog';
 
 interface Project {
   id: string;
@@ -189,6 +190,7 @@ const AdminProjects = () => {
             View and manage all research projects
           </p>
         </div>
+        <CreateProjectDialog departments={departments} onProjectCreated={fetchData} />
       </div>
 
       {/* Statistics Cards */}
