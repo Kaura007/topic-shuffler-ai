@@ -82,7 +82,15 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ depart
     setFormData({
       ...formData,
       student_id: studentId,
+      // Pre-fill matriculation number from student profile, but allow admin to change it
       matriculation_number: student?.matriculation_number || ''
+    });
+  };
+
+  const handleMatriculationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      matriculation_number: e.target.value
     });
   };
 
@@ -91,6 +99,17 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ depart
     setIsLoading(true);
 
     try {
+      // Validate required fields
+      if (!formData.student_id) {
+        throw new Error('Please select a student');
+      }
+      if (!formData.title.trim()) {
+        throw new Error('Please enter a project title');
+      }
+      if (!formData.department_id) {
+        throw new Error('Please select a department');
+      }
+
       const projectData = {
         title: formData.title,
         abstract: formData.abstract || null,
@@ -98,7 +117,8 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ depart
         department_id: formData.department_id,
         student_id: formData.student_id,
         file_url: uploadedFilePath || null,
-        matriculation_number: formData.matriculation_number || null
+        // Use the matriculation number from form (whether auto-filled or manually entered)
+        matriculation_number: formData.matriculation_number.trim() || null
       };
 
       const { error } = await supabase
@@ -153,7 +173,7 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ depart
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="student">Student</Label>
+            <Label htmlFor="student">Student *</Label>
             <Select
               value={formData.student_id}
               onValueChange={handleStudentChange}
@@ -173,7 +193,22 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ depart
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="title">Project Title</Label>
+            <Label htmlFor="matriculation_number">Matriculation Number</Label>
+            <Input
+              id="matriculation_number"
+              value={formData.matriculation_number}
+              onChange={handleMatriculationNumberChange}
+              placeholder="Enter or edit matriculation number"
+            />
+            <p className="text-xs text-muted-foreground">
+              {formData.student_id 
+                ? "Auto-filled from student profile. You can edit if needed." 
+                : "Will be auto-filled when you select a student"}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="title">Project Title *</Label>
             <Input
               id="title"
               value={formData.title}
@@ -196,7 +231,7 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ depart
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="year">Year</Label>
+              <Label htmlFor="year">Year *</Label>
               <Input
                 id="year"
                 type="number"
@@ -209,7 +244,7 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ depart
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="department">Department</Label>
+              <Label htmlFor="department">Department *</Label>
               <Select
                 value={formData.department_id}
                 onValueChange={(value) => setFormData({ ...formData, department_id: value })}
@@ -227,16 +262,6 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ depart
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="matriculation_number">Matriculation Number</Label>
-            <Input
-              id="matriculation_number"
-              value={formData.matriculation_number}
-              onChange={(e) => setFormData({ ...formData, matriculation_number: e.target.value })}
-              placeholder="Matriculation number"
-            />
           </div>
 
           <div className="space-y-2">
