@@ -185,7 +185,8 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
         department_id: data.department_id,
         student_id: userProfile.id,
         file_url: uploadedFile?.url || null,
-        tags: data.tags || []
+        tags: data.tags || [],
+        matriculation_number: userProfile.matriculation_number || null
       };
 
       const { data: project, error } = await supabase

@@ -118,6 +118,7 @@ export type Database = {
           department_id: string
           file_url: string | null
           id: string
+          matriculation_number: string | null
           student_id: string
           tags: string[] | null
           title: string
@@ -130,6 +131,7 @@ export type Database = {
           department_id: string
           file_url?: string | null
           id?: string
+          matriculation_number?: string | null
           student_id: string
           tags?: string[] | null
           title: string
@@ -142,6 +144,7 @@ export type Database = {
           department_id?: string
           file_url?: string | null
           id?: string
+          matriculation_number?: string | null
           student_id?: string
           tags?: string[] | null
           title?: string
