@@ -33,17 +33,16 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ depart
   const [isLoading, setIsLoading] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
   const [uploadedFilePath, setUploadedFilePath] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    student_id: '',
-    title: '',
-    abstract: '',
-    year: new Date().getFullYear(),
-    department_id: '',
-    matriculation_number: ''
-  });
+  
+  // Separate state for each field to avoid conflicts
+  const [studentId, setStudentId] = useState('');
+  const [title, setTitle] = useState('');
+  const [abstract, setAbstract] = useState('');
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [departmentId, setDepartmentId] = useState('');
+  const [matriculationNumber, setMatriculationNumber] = useState('');
 
   const handleFileUploaded = (fileUrl: string, fileName: string) => {
-    // Get public URL from the file path
     const { data: { publicUrl } } = supabase.storage
       .from('project-files')
       .getPublicUrl(fileUrl);
@@ -54,8 +53,20 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ depart
   useEffect(() => {
     if (open) {
       fetchStudents();
+      // Reset all fields when dialog opens
+      resetForm();
     }
   }, [open]);
+
+  const resetForm = () => {
+    setStudentId('');
+    setTitle('');
+    setAbstract('');
+    setYear(new Date().getFullYear());
+    setDepartmentId('');
+    setMatriculationNumber('');
+    setUploadedFilePath(null);
+  };
 
   const fetchStudents = async () => {
     try {
@@ -77,49 +88,64 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ depart
     }
   };
 
-  const handleStudentChange = (studentId: string) => {
-    const student = students.find(s => s.id === studentId);
-    setFormData({
-      ...formData,
-      student_id: studentId,
-      // Pre-fill matriculation number from student profile, but allow admin to change it
-      matriculation_number: student?.matriculation_number || ''
-    });
-  };
-
-  const handleMatriculationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      matriculation_number: e.target.value
-    });
+  const handleStudentChange = (selectedStudentId: string) => {
+    setStudentId(selectedStudentId);
+    
+    // Auto-fill matriculation number if student has one
+    const student = students.find(s => s.id === selectedStudentId);
+    if (student?.matriculation_number) {
+      setMatriculationNumber(student.matriculation_number);
+    } else {
+      // Clear it if student doesn't have one
+      setMatriculationNumber('');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation
+    if (!studentId) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a student",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!title.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a project title",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!departmentId) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a department",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // Validate required fields
-      if (!formData.student_id) {
-        throw new Error('Please select a student');
-      }
-      if (!formData.title.trim()) {
-        throw new Error('Please enter a project title');
-      }
-      if (!formData.department_id) {
-        throw new Error('Please select a department');
-      }
-
       const projectData = {
-        title: formData.title,
-        abstract: formData.abstract || null,
-        year: formData.year,
-        department_id: formData.department_id,
-        student_id: formData.student_id,
+        title: title.trim(),
+        abstract: abstract.trim() || null,
+        year: year,
+        department_id: departmentId,
+        student_id: studentId,
         file_url: uploadedFilePath || null,
-        // Use the matriculation number from form (whether auto-filled or manually entered)
-        matriculation_number: formData.matriculation_number.trim() || null
+        matriculation_number: matriculationNumber.trim() || null
       };
+
+      console.log('Submitting project data:', projectData);
 
       const { error } = await supabase
         .from('projects')
@@ -128,27 +154,19 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ depart
       if (error) throw error;
 
       toast({
-        title: "Project created successfully",
-        description: `${formData.title} has been added to the system.`
+        title: "Success!",
+        description: `Project "${title}" has been created successfully.`
       });
 
-      // Reset form and close dialog
-      setFormData({
-        student_id: '',
-        title: '',
-        abstract: '',
-        year: new Date().getFullYear(),
-        department_id: '',
-        matriculation_number: ''
-      });
-      setUploadedFilePath(null);
+      resetForm();
       setOpen(false);
       onProjectCreated();
+      
     } catch (error: any) {
       console.error('Error creating project:', error);
       toast({
         title: "Error creating project",
-        description: error.message || "Failed to create project",
+        description: error.message || "Failed to create project. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -172,10 +190,11 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ depart
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Student Selection */}
           <div className="space-y-2">
             <Label htmlFor="student">Student *</Label>
             <Select
-              value={formData.student_id}
+              value={studentId}
               onValueChange={handleStudentChange}
               required
             >
@@ -192,51 +211,57 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ depart
             </Select>
           </div>
 
+          {/* Matriculation Number */}
           <div className="space-y-2">
             <Label htmlFor="matriculation_number">Matriculation Number</Label>
             <Input
               id="matriculation_number"
-              value={formData.matriculation_number}
-              onChange={handleMatriculationNumberChange}
-              placeholder="Enter or edit matriculation number"
+              type="text"
+              value={matriculationNumber}
+              onChange={(e) => setMatriculationNumber(e.target.value)}
+              placeholder="Enter matriculation number"
             />
             <p className="text-xs text-muted-foreground">
-              {formData.student_id 
-                ? "Auto-filled from student profile. You can edit if needed." 
-                : "Will be auto-filled when you select a student"}
+              {studentId 
+                ? "Auto-filled from student profile. You can edit or add if missing." 
+                : "Select a student first"}
             </p>
           </div>
 
+          {/* Project Title */}
           <div className="space-y-2">
             <Label htmlFor="title">Project Title *</Label>
             <Input
               id="title"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter project title"
               required
             />
           </div>
 
+          {/* Abstract */}
           <div className="space-y-2">
             <Label htmlFor="abstract">Abstract</Label>
             <Textarea
               id="abstract"
-              value={formData.abstract}
-              onChange={(e) => setFormData({ ...formData, abstract: e.target.value })}
+              value={abstract}
+              onChange={(e) => setAbstract(e.target.value)}
               placeholder="Enter project abstract or description"
               rows={4}
             />
           </div>
 
+          {/* Year and Department */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="year">Year *</Label>
               <Input
                 id="year"
                 type="number"
-                value={formData.year}
-                onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
+                value={year}
+                onChange={(e) => setYear(parseInt(e.target.value) || new Date().getFullYear())}
                 min={2000}
                 max={2100}
                 required
@@ -246,8 +271,8 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ depart
             <div className="space-y-2">
               <Label htmlFor="department">Department *</Label>
               <Select
-                value={formData.department_id}
-                onValueChange={(value) => setFormData({ ...formData, department_id: value })}
+                value={departmentId}
+                onValueChange={setDepartmentId}
                 required
               >
                 <SelectTrigger>
@@ -264,19 +289,31 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ depart
             </div>
           </div>
 
+          {/* File Upload */}
           <div className="space-y-2">
             <Label>Project File (Optional)</Label>
-            {formData.student_id ? (
+            {studentId ? (
               <FileUpload onFileUploaded={handleFileUploaded} />
             ) : (
               <p className="text-sm text-muted-foreground">
                 Please select a student first before uploading a file
               </p>
             )}
+            {uploadedFilePath && (
+              <p className="text-xs text-green-600">
+                ✓ File uploaded successfully
+              </p>
+            )}
           </div>
 
+          {/* Action Buttons */}
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setOpen(false)}
+              disabled={isLoading}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>
