@@ -43,10 +43,13 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
   onSubmit,
   onCancel
 }) => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [students, setStudents] = useState<Array<{ id: string; name: string; matriculation_number: string | null }>>([]);
+  const [selectedStudentId, setSelectedStudentId] = useState<string>('');
+  const [manualMatricNumber, setManualMatricNumber] = useState<string>('');
   const [uploadedFile, setUploadedFile] = useState<{ url: string; name: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [duplicates, setDuplicates] = useState<Array<{ project: any, similarity: number }>>([]);
@@ -99,6 +102,19 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
       if (deptError) throw deptError;
 
       setDepartments(deptData || []);
+
+      // Fetch all students if user is admin
+      if (isAdmin) {
+        const { data: studentsData, error: studentsError } = await supabase
+          .from('profiles')
+          .select('id, name, matriculation_number')
+          .eq('role', 'student')
+          .order('name');
+
+        if (studentsError) throw studentsError;
+
+        setStudents(studentsData || []);
+      }
 
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -155,13 +171,33 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
   }, [checkDuplicates]);
 
   const onFormSubmit = async (data: ProjectFormData) => {
-    if (!userProfile) {
-      toast({
-        title: "Profile not loaded",
-        description: "Please refresh and try again",
-        variant: "destructive"
-      });
-      return;
+    // Validate based on user role
+    if (isAdmin) {
+      if (!selectedStudentId) {
+        toast({
+          title: "Student selection required",
+          description: "Please select a student for this project",
+          variant: "destructive"
+        });
+        return;
+      }
+      if (!manualMatricNumber.trim()) {
+        toast({
+          title: "Matriculation number required",
+          description: "Please enter the student's matriculation number",
+          variant: "destructive"
+        });
+        return;
+      }
+    } else {
+      if (!userProfile) {
+        toast({
+          title: "Profile not loaded",
+          description: "Please refresh and try again",
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     // Check for blocking duplicates
@@ -183,10 +219,10 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
         abstract: data.abstract,
         year: data.year,
         department_id: data.department_id,
-        student_id: userProfile.id,
+        student_id: isAdmin ? selectedStudentId : userProfile.id,
         file_url: uploadedFile?.url || null,
         tags: data.tags || [],
-        matriculation_number: userProfile.matriculation_number || null
+        matriculation_number: isAdmin ? manualMatricNumber : (userProfile.matriculation_number || null)
       };
 
       const { data: project, error } = await supabase
@@ -298,34 +334,80 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
             />
 
             {/* Student Info Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <FormLabel>Student Name</FormLabel>
-                <Input 
-                  value={userProfile?.name || 'Loading...'} 
-                  disabled 
-                  className="bg-muted"
-                />
-                <FormDescription>
-                  Your registered name from your profile
-                </FormDescription>
-              </div>
+            {isAdmin ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <FormLabel>Select Student *</FormLabel>
+                  <Select 
+                    value={selectedStudentId} 
+                    onValueChange={(value) => {
+                      setSelectedStudentId(value);
+                      const student = students.find(s => s.id === value);
+                      if (student?.matriculation_number) {
+                        setManualMatricNumber(student.matriculation_number);
+                      } else {
+                        setManualMatricNumber('');
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a student" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {students.map((student) => (
+                        <SelectItem key={student.id} value={student.id}>
+                          {student.name} {student.matriculation_number ? `(${student.matriculation_number})` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Select the student for this project
+                  </FormDescription>
+                </div>
 
-              <div className="space-y-2">
-                <FormLabel>Matriculation Number</FormLabel>
-                <Input 
-                  value={userProfile?.matriculation_number || 'Not set'} 
-                  disabled 
-                  className="bg-muted"
-                />
-                <FormDescription>
-                  {userProfile?.matriculation_number ? 
-                    'Your matriculation number from your profile' : 
-                    'Update your matriculation number in your profile'
-                  }
-                </FormDescription>
+                <div className="space-y-2">
+                  <FormLabel>Matriculation Number *</FormLabel>
+                  <Input 
+                    value={manualMatricNumber} 
+                    onChange={(e) => setManualMatricNumber(e.target.value)}
+                    placeholder="Enter matriculation number"
+                  />
+                  <FormDescription>
+                    Enter the student's matriculation number
+                  </FormDescription>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <FormLabel>Student Name</FormLabel>
+                  <Input 
+                    value={userProfile?.name || 'Loading...'} 
+                    disabled 
+                    className="bg-muted"
+                  />
+                  <FormDescription>
+                    Your registered name from your profile
+                  </FormDescription>
+                </div>
+
+                <div className="space-y-2">
+                  <FormLabel>Matriculation Number</FormLabel>
+                  <Input 
+                    value={userProfile?.matriculation_number || 'Not set'} 
+                    disabled 
+                    className="bg-muted"
+                  />
+                  <FormDescription>
+                    {userProfile?.matriculation_number ? 
+                      'Your matriculation number from your profile' : 
+                      'Update your matriculation number in your profile'
+                    }
+                  </FormDescription>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
