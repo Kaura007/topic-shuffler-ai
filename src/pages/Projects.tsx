@@ -40,7 +40,7 @@ interface SearchFilters {
 }
 
 const Projects = () => {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
@@ -87,8 +87,15 @@ const Projects = () => {
         `)
         .order('created_at', { ascending: false });
 
+      // Fetch user's role
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
       // If not admin, only show user's own projects
-      if (profile.role !== 'admin') {
+      if (roleData?.role !== 'admin') {
         query = query.eq('student_id', profile.id);
       }
 
@@ -229,10 +236,10 @@ const Projects = () => {
         <div>
           <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
             <BookOpen className="h-8 w-8" />
-            {userProfile?.role === 'admin' ? 'All Projects' : 'My Projects'}
+            {userRole === 'admin' ? 'All Projects' : 'My Projects'}
           </h1>
           <p className="text-muted-foreground mt-1">
-            {userProfile?.role === 'admin' 
+            {userRole === 'admin' 
               ? `Managing ${filteredProjects.length} of ${projects.length} projects`
               : `${filteredProjects.length} projects found`
             }

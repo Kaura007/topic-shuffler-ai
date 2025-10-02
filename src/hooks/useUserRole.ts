@@ -1,10 +1,10 @@
 import { useAuth } from '@/contexts/AuthContext';
 
 export const useUserRole = () => {
-  const { userProfile, isAdmin } = useAuth();
+  const { userProfile, userRole, isAdmin } = useAuth();
 
   const hasRole = (role: string) => {
-    return userProfile?.role === role;
+    return userRole === role;
   };
 
   const isStudent = () => hasRole('student');
@@ -14,6 +14,6 @@ export const useUserRole = () => {
     isAdmin,
     isStudent,
     hasRole,
-    role: userProfile?.role || null
+    role: userRole
   };
 };

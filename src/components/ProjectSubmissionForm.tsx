@@ -109,10 +109,21 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
 
       // Fetch all students if user is admin
       if (isAdmin) {
+        // Fetch student user_ids first
+        const { data: studentRoles, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('user_id')
+          .eq('role', 'student');
+
+        if (rolesError) throw rolesError;
+
+        const studentUserIds = studentRoles?.map(r => r.user_id) || [];
+
+        // Then fetch profiles for those user_ids
         const { data: studentsData, error: studentsError } = await supabase
           .from('profiles')
-          .select('id, name, matriculation_number')
-          .eq('role', 'student')
+          .select('id, name, matriculation_number, user_id')
+          .in('user_id', studentUserIds)
           .order('name');
 
         if (studentsError) throw studentsError;

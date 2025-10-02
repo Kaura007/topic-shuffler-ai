@@ -15,7 +15,6 @@ interface Profile {
   id: string;
   user_id: string;
   name: string;
-  role: string;
   department_id: string | null;
   avatar_url: string | null;
   created_at: string;
@@ -32,7 +31,7 @@ interface ProfileStats {
 }
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [stats, setStats] = useState<ProfileStats | null>(null);
@@ -185,18 +184,20 @@ const Profile = () => {
                   onAvatarUpdate={handleAvatarUpdate}
                   editable={true}
                 />
-                <div className="flex-1">
-                  <CardTitle className="text-2xl mb-2">{profile.name}</CardTitle>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Badge variant={getRoleBadgeVariant(profile.role)}>
-                      {profile.role}
-                    </Badge>
-                    {profile.departments && (
-                      <Badge variant="outline">
-                        {profile.departments.name}
-                      </Badge>
-                    )}
-                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-2xl mb-2">{profile.name}</CardTitle>
+                    <div className="flex items-center gap-2 mb-3">
+                      {userRole && (
+                        <Badge variant={getRoleBadgeVariant(userRole)}>
+                          {userRole}
+                        </Badge>
+                      )}
+                      {profile.departments && (
+                        <Badge variant="outline">
+                          {profile.departments.name}
+                        </Badge>
+                      )}
+                    </div>
                   <div className="space-y-2 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <Mail className="w-4 h-4" />
@@ -241,7 +242,7 @@ const Profile = () => {
                     <Label className="text-sm font-medium text-muted-foreground">
                       Account Type
                     </Label>
-                    <p className="text-sm capitalize mt-1">{profile.role}</p>
+                    <p className="text-sm capitalize mt-1">{userRole || 'student'}</p>
                   </div>
                 </div>
                 

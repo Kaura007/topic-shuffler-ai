@@ -15,7 +15,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requireAdmin = false,
   fallbackPath = '/dashboard'
 }) => {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, isAdmin, loading } = useAuth();
 
   // Show loading state while checking authentication
   if (loading) {
@@ -49,7 +49,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Check admin requirement
-  if (requireAdmin && userProfile.role !== 'admin') {
+  if (requireAdmin && !isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen p-6">
         <Alert className="max-w-md">

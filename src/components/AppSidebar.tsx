@@ -128,12 +128,10 @@ export function AppSidebar() {
         {/* User Actions */}
         <div className="mt-auto p-4 border-t">
           <div className="space-y-2">
-            {!isCollapsed && (
+            {!isCollapsed && userProfile && (
               <div className="text-xs text-muted-foreground mb-2">
-                <div>Signed in as {user?.email}</div>
-                {userProfile && (
-                  <div className="capitalize">Role: {userProfile.role}</div>
-                )}
+                <div>{userProfile.name}</div>
+                <div className="text-muted-foreground">{user?.email}</div>
               </div>
             )}
             <Button

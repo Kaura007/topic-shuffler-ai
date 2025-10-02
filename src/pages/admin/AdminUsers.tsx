@@ -55,6 +55,22 @@ const AdminUsers = () => {
 
       if (profilesError) throw profilesError;
 
+      // Fetch roles for each profile
+      const profilesWithRoles = await Promise.all(
+        (profilesData || []).map(async (profile) => {
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', profile.user_id)
+            .single();
+          
+          return {
+            ...profile,
+            role: roleData?.role || 'student'
+          };
+        })
+      );
+
       // Fetch departments
       const { data: departmentsData, error: departmentsError } = await supabase
         .from('departments')
@@ -63,7 +79,7 @@ const AdminUsers = () => {
 
       if (departmentsError) throw departmentsError;
 
-      setProfiles(profilesData || []);
+      setProfiles(profilesWithRoles || []);
       setDepartments(departmentsData || []);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -77,14 +93,31 @@ const AdminUsers = () => {
     }
   };
 
-  const updateUserRole = async (profileId: string, newRole: string) => {
+  const updateUserRole = async (profileId: string, userId: string, newRole: 'admin' | 'student') => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('id', profileId);
+      // Check if role exists
+      const { data: existingRole } = await supabase
+        .from('user_roles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
 
-      if (error) throw error;
+      if (existingRole) {
+        // Update existing role
+        const { error } = await supabase
+          .from('user_roles')
+          .update({ role: newRole })
+          .eq('user_id', userId);
+
+        if (error) throw error;
+      } else {
+        // Insert new role - cast newRole to the app_role type
+        const { error } = await supabase
+          .from('user_roles')
+          .insert([{ user_id: userId, role: newRole as 'admin' | 'student' }]);
+
+        if (error) throw error;
+      }
 
       // Update local state
       setProfiles(profiles.map(p => 
@@ -143,25 +176,30 @@ const AdminUsers = () => {
     }
   };
 
-  const deleteUser = async (profile: Profile) => {
+  const deleteUser = async (userId: string) => {
     try {
-      // Note: Deleting from profiles will cascade due to auth.users foreign key
-      const { error } = await supabase.auth.admin.deleteUser(profile.user_id);
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId }
+      });
 
       if (error) throw error;
 
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
       // Remove from local state
-      setProfiles(profiles.filter(p => p.id !== profile.id));
+      setProfiles(profiles.filter(p => p.user_id !== userId));
 
       toast({
         title: "User deleted",
         description: "User has been permanently deleted"
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting user:', error);
       toast({
         title: "Error",
-        description: "Failed to delete user. You may not have admin permissions.",
+        description: error.message || "Failed to delete user. You may not have admin permissions.",
         variant: "destructive"
       });
     }
@@ -322,7 +360,7 @@ const AdminUsers = () => {
                     <TableCell>
                       <Select
                         value={profile.role}
-                        onValueChange={(value) => updateUserRole(profile.id, value)}
+                        onValueChange={(value: 'admin' | 'student') => updateUserRole(profile.id, profile.user_id, value)}
                       >
                         <SelectTrigger className="w-32">
                           <SelectValue />
@@ -386,7 +424,7 @@ const AdminUsers = () => {
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => deleteUser(profile)}
+                              onClick={() => deleteUser(profile.user_id)}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
                               Delete User

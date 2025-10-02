@@ -27,7 +27,6 @@ interface Department {
 interface Profile {
   id: string;
   name: string;
-  role: string;
   department_id: string | null;
   matriculation_number?: string | null;
   departments?: {
