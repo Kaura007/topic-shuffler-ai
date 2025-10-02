@@ -18,6 +18,8 @@ import { quickDuplicateCheck, checkProjectForDuplicates } from '@/lib/duplicateD
 import { Loader2, Upload, Shield, Tag } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useCallback, useRef } from 'react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
 const projectSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
@@ -50,6 +52,8 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
   const [students, setStudents] = useState<Array<{ id: string; name: string; matriculation_number: string | null }>>([]);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [manualMatricNumber, setManualMatricNumber] = useState<string>('');
+  const [studentEntryMode, setStudentEntryMode] = useState<'select' | 'manual'>('select');
+  const [manualStudentName, setManualStudentName] = useState<string>('');
   const [uploadedFile, setUploadedFile] = useState<{ url: string; name: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [duplicates, setDuplicates] = useState<Array<{ project: any, similarity: number }>>([]);
@@ -173,13 +177,24 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
   const onFormSubmit = async (data: ProjectFormData) => {
     // Validate based on user role
     if (isAdmin) {
-      if (!selectedStudentId) {
-        toast({
-          title: "Student selection required",
-          description: "Please select a student for this project",
-          variant: "destructive"
-        });
-        return;
+      if (studentEntryMode === 'select') {
+        if (!selectedStudentId) {
+          toast({
+            title: "Student selection required",
+            description: "Please select a student for this project",
+            variant: "destructive"
+          });
+          return;
+        }
+      } else {
+        if (!manualStudentName.trim()) {
+          toast({
+            title: "Student name required",
+            description: "Please enter the student's name",
+            variant: "destructive"
+          });
+          return;
+        }
       }
       if (!manualMatricNumber.trim()) {
         toast({
@@ -219,7 +234,8 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
         abstract: data.abstract,
         year: data.year,
         department_id: data.department_id,
-        student_id: isAdmin ? selectedStudentId : userProfile.id,
+        student_id: isAdmin && studentEntryMode === 'select' ? selectedStudentId : (isAdmin ? null : userProfile.id),
+        student_name: isAdmin && studentEntryMode === 'manual' ? manualStudentName : null,
         file_url: uploadedFile?.url || null,
         tags: data.tags || [],
         matriculation_number: isAdmin ? manualMatricNumber : (userProfile.matriculation_number || null)
@@ -335,48 +351,106 @@ export const ProjectSubmissionForm: React.FC<ProjectSubmissionFormProps> = ({
 
             {/* Student Info Section */}
             {isAdmin ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <FormLabel>Select Student *</FormLabel>
-                  <Select 
-                    value={selectedStudentId} 
-                    onValueChange={(value) => {
-                      setSelectedStudentId(value);
-                      const student = students.find(s => s.id === value);
-                      if (student?.matriculation_number) {
-                        setManualMatricNumber(student.matriculation_number);
+              <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                <div className="space-y-3">
+                  <FormLabel>Student Entry Method *</FormLabel>
+                  <RadioGroup 
+                    value={studentEntryMode} 
+                    onValueChange={(value: 'select' | 'manual') => {
+                      setStudentEntryMode(value);
+                      // Reset fields when switching modes
+                      if (value === 'manual') {
+                        setSelectedStudentId('');
+                        setManualMatricNumber('');
                       } else {
+                        setManualStudentName('');
                         setManualMatricNumber('');
                       }
                     }}
+                    className="flex gap-4"
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a student" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {students.map((student) => (
-                        <SelectItem key={student.id} value={student.id}>
-                          {student.name} {student.matriculation_number ? `(${student.matriculation_number})` : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    Select the student for this project
-                  </FormDescription>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="select" id="select" />
+                      <Label htmlFor="select" className="cursor-pointer">Select existing student</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="manual" id="manual" />
+                      <Label htmlFor="manual" className="cursor-pointer">Enter student manually</Label>
+                    </div>
+                  </RadioGroup>
                 </div>
 
-                <div className="space-y-2">
-                  <FormLabel>Matriculation Number *</FormLabel>
-                  <Input 
-                    value={manualMatricNumber} 
-                    onChange={(e) => setManualMatricNumber(e.target.value)}
-                    placeholder="Enter matriculation number"
-                  />
-                  <FormDescription>
-                    Enter the student's matriculation number
-                  </FormDescription>
-                </div>
+                {studentEntryMode === 'select' ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <FormLabel>Select Student *</FormLabel>
+                      <Select 
+                        value={selectedStudentId} 
+                        onValueChange={(value) => {
+                          setSelectedStudentId(value);
+                          const student = students.find(s => s.id === value);
+                          if (student?.matriculation_number) {
+                            setManualMatricNumber(student.matriculation_number);
+                          } else {
+                            setManualMatricNumber('');
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a student" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {students.map((student) => (
+                            <SelectItem key={student.id} value={student.id}>
+                              {student.name} {student.matriculation_number ? `(${student.matriculation_number})` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Select the student for this project
+                      </FormDescription>
+                    </div>
+
+                    <div className="space-y-2">
+                      <FormLabel>Matriculation Number *</FormLabel>
+                      <Input 
+                        value={manualMatricNumber} 
+                        onChange={(e) => setManualMatricNumber(e.target.value)}
+                        placeholder="Enter matriculation number"
+                      />
+                      <FormDescription>
+                        Enter or edit the student's matriculation number
+                      </FormDescription>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <FormLabel>Student Name *</FormLabel>
+                      <Input 
+                        value={manualStudentName} 
+                        onChange={(e) => setManualStudentName(e.target.value)}
+                        placeholder="Enter student's full name"
+                      />
+                      <FormDescription>
+                        Enter the name of the student for this project
+                      </FormDescription>
+                    </div>
+
+                    <div className="space-y-2">
+                      <FormLabel>Matriculation Number *</FormLabel>
+                      <Input 
+                        value={manualMatricNumber} 
+                        onChange={(e) => setManualMatricNumber(e.target.value)}
+                        placeholder="Enter matriculation number"
+                      />
+                      <FormDescription>
+                        Enter the student's matriculation number
+                      </FormDescription>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -119,7 +119,8 @@ export type Database = {
           file_url: string | null
           id: string
           matriculation_number: string | null
-          student_id: string
+          student_id: string | null
+          student_name: string | null
           tags: string[] | null
           title: string
           updated_at: string
@@ -132,7 +133,8 @@ export type Database = {
           file_url?: string | null
           id?: string
           matriculation_number?: string | null
-          student_id: string
+          student_id?: string | null
+          student_name?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string
@@ -145,7 +147,8 @@ export type Database = {
           file_url?: string | null
           id?: string
           matriculation_number?: string | null
-          student_id?: string
+          student_id?: string | null
+          student_name?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string
