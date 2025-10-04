@@ -20,10 +20,10 @@ interface Project {
   tags: string[];
   departments: {
     name: string;
-  };
+  } | null;
   profiles: {
     name: string;
-  };
+  } | null;
 }
 
 interface Department {
@@ -153,8 +153,8 @@ const Projects = () => {
           searchIds.includes(project.id) ||
           project.title.toLowerCase().includes(filters.query.toLowerCase()) ||
           project.abstract?.toLowerCase().includes(filters.query.toLowerCase()) ||
-          project.profiles.name.toLowerCase().includes(filters.query.toLowerCase()) ||
-          project.departments.name.toLowerCase().includes(filters.query.toLowerCase()) ||
+          project.profiles?.name.toLowerCase().includes(filters.query.toLowerCase()) ||
+          project.departments?.name.toLowerCase().includes(filters.query.toLowerCase()) ||
           project.tags.some(tag => tag.toLowerCase().includes(filters.query.toLowerCase()))
         );
       } else {
@@ -162,8 +162,8 @@ const Projects = () => {
         filtered = filtered.filter(project =>
           project.title.toLowerCase().includes(filters.query.toLowerCase()) ||
           project.abstract?.toLowerCase().includes(filters.query.toLowerCase()) ||
-          project.profiles.name.toLowerCase().includes(filters.query.toLowerCase()) ||
-          project.departments.name.toLowerCase().includes(filters.query.toLowerCase()) ||
+          project.profiles?.name.toLowerCase().includes(filters.query.toLowerCase()) ||
+          project.departments?.name.toLowerCase().includes(filters.query.toLowerCase()) ||
           project.tags.some(tag => tag.toLowerCase().includes(filters.query.toLowerCase()))
         );
       }
@@ -176,7 +176,7 @@ const Projects = () => {
 
     // Department filter
     if (filters.department !== 'all') {
-      filtered = filtered.filter(project => project.departments.name === filters.department);
+      filtered = filtered.filter(project => project.departments?.name === filters.department);
     }
 
     // Tags filter
@@ -188,7 +188,7 @@ const Projects = () => {
 
     // Author filter
     if (filters.author !== 'all') {
-      filtered = filtered.filter(project => project.profiles.name === filters.author);
+      filtered = filtered.filter(project => project.profiles?.name === filters.author);
     }
 
     setFilteredProjects(filtered);
@@ -201,7 +201,7 @@ const Projects = () => {
   };
   
   const getAvailableAuthors = () => {
-    const authors = [...new Set(projects.map(p => p.profiles.name))].sort();
+    const authors = [...new Set(projects.map(p => p.profiles?.name).filter(Boolean))].sort();
     return authors;
   };
 
@@ -292,10 +292,12 @@ const Projects = () => {
                     <CardTitle className="text-xl mb-2">{project.title}</CardTitle>
                     <div className="flex flex-wrap items-center gap-2 mb-3">
                       <Badge variant="secondary">{project.year}</Badge>
-                      <Badge variant="outline" className="flex items-center gap-1">
-                        <Building className="h-3 w-3" />
-                        {project.departments.name}
-                      </Badge>
+                      {project.departments && (
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          <Building className="h-3 w-3" />
+                          {project.departments.name}
+                        </Badge>
+                      )}
                       <Badge variant="outline" className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         {formatDate(project.created_at)}
@@ -312,7 +314,7 @@ const Projects = () => {
                       )}
                     </div>
                     <CardDescription>
-                      By {project.profiles.name}
+                      {project.profiles ? `By ${project.profiles.name}` : 'Author unknown'}
                     </CardDescription>
                   </div>
                 </div>

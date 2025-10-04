@@ -70,10 +70,21 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ depart
 
   const fetchStudents = async () => {
     try {
+      // Get student user IDs from user_roles
+      const { data: studentRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'student');
+
+      if (rolesError) throw rolesError;
+      
+      const studentUserIds = studentRoles?.map(r => r.user_id) || [];
+      
+      // Fetch profiles for students
       const { data, error } = await supabase
         .from('profiles')
         .select('id, name, user_id, matriculation_number')
-        .eq('role', 'student')
+        .in('user_id', studentUserIds)
         .order('name');
 
       if (error) throw error;
