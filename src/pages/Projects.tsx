@@ -18,6 +18,7 @@ interface Project {
   updated_at: string;
   file_url: string | null;
   tags: string[];
+  student_name: string | null;
   departments: {
     name: string;
   } | null;
@@ -314,7 +315,7 @@ const Projects = () => {
                       )}
                     </div>
                     <CardDescription>
-                      {project.profiles ? `By ${project.profiles.name}` : 'Author unknown'}
+                      By {project.profiles?.name || project.student_name || 'Unknown'}
                     </CardDescription>
                   </div>
                 </div>
