@@ -91,14 +91,6 @@ const AdminProjects = () => {
 
   const deleteProject = async (project: Project) => {
     try {
-      // Delete associated history logs first
-      const { error: historyError } = await supabase
-        .from('history_logs')
-        .delete()
-        .eq('project_id', project.id);
-
-      if (historyError) throw historyError;
-
       // Delete the file from storage if it exists
       if (project.file_url) {
         const fileName = project.file_url.split('/').pop();
