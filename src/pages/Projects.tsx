@@ -84,7 +84,7 @@ const Projects = () => {
         .select(`
           *,
           departments(name),
-          profiles(name)
+          profiles!projects_student_id_fkey(name)
         `)
         .order('created_at', { ascending: false });
 
