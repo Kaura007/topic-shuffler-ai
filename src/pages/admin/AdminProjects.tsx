@@ -22,13 +22,14 @@ interface Project {
   updated_at: string;
   file_url: string | null;
   student_id: string;
+  student_name: string | null;
   department_id: string;
   departments: {
     name: string;
   };
   profiles: {
     name: string;
-  };
+  } | null;
 }
 
 interface Department {
@@ -133,9 +134,10 @@ const AdminProjects = () => {
 
   // Filter projects based on search and filters
   const filteredProjects = projects.filter(project => {
+    const studentName = project.profiles?.name || project.student_name || '';
     const matchesSearch = 
       project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.profiles?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (project.abstract || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.departments?.name.toLowerCase().includes(searchQuery.toLowerCase());
     
@@ -322,7 +324,7 @@ const AdminProjects = () => {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
-                        {project.profiles?.name}
+                        {project.profiles?.name || project.student_name || 'Unknown'}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -410,7 +412,7 @@ const AdminProjects = () => {
             <DialogHeader>
               <DialogTitle>{selectedProject.title}</DialogTitle>
               <DialogDescription>
-                By {selectedProject.profiles?.name} • {selectedProject.departments?.name} • {selectedProject.year}
+                By {selectedProject.profiles?.name || selectedProject.student_name || 'Unknown'} • {selectedProject.departments?.name} • {selectedProject.year}
               </DialogDescription>
             </DialogHeader>
             
@@ -418,7 +420,7 @@ const AdminProjects = () => {
               {/* Project Details */}
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="font-medium">Student:</span> {selectedProject.profiles?.name}
+                  <span className="font-medium">Student:</span> {selectedProject.profiles?.name || selectedProject.student_name || 'Unknown'}
                 </div>
                 <div>
                   <span className="font-medium">Department:</span> {selectedProject.departments?.name}
